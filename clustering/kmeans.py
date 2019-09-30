@@ -1,5 +1,5 @@
 from collections import defaultdict
-from math import inf
+from math import inf, sqrt
 import random
 import csv
 
@@ -11,8 +11,12 @@ def point_avg(points):
     
     Returns a new point which is the center of all the points.
     """
-    raise NotImplementedError()
-
+    
+    sum_of_points = [sum(x) for x in zip(*points)]
+    num = len(points)
+    if(num <= 0):
+        raise ValueError("Number of points should be greater than 0.")
+    return  [x / num for x in sum_of_points] 
 
 def update_centers(data_set, assignments):
     """
@@ -21,11 +25,32 @@ def update_centers(data_set, assignments):
     Compute the center for each of the assigned groups.
     Return `k` centers in a list
     """
-    raise NotImplementedError()
+    
+    #Finding value of k
+    unique_assignments_list = list(set(assignments))
+    k = len(unique_assignments_list)
 
+    if(k <= 0):
+        raise ValueError("k should be greater than 0.")
+
+    list_of_clusters = {}
+    cluster_sizes = [0]*k
+
+    for data, assignment in zip(data_set, assignments):
+        if assignment not in list_of_clusters:
+            list_of_clusters[assignment] = []
+        list_of_clusters[assignment].append(data)
+
+    centers = []
+    for key, values in list_of_clusters.items():
+        centers.append(point_avg(values))
+    
+    return centers
+    
 
 def assign_points(data_points, centers):
     """
+    Finds the center with the shortest distance to each point
     """
     assignments = []
     for point in data_points:
@@ -44,7 +69,14 @@ def distance(a, b):
     """
     Returns the Euclidean distance between a and b
     """
-    raise NotImplementedError()
+
+    sum_of_squares = 0
+
+    for i,j in zip(a,b):
+        sum_of_squares = sum_of_squares + pow(i-j, 2)
+    distance = sqrt(sum_of_squares/len(a))
+
+    return distance
 
 
 def generate_k(data_set, k):
@@ -52,18 +84,41 @@ def generate_k(data_set, k):
     Given `data_set`, which is an array of arrays,
     return a random set of k points from the data_set
     """
-    raise NotImplementedError()
+    return random.sample(data_set, k)
 
 
 def get_list_from_dataset_file(dataset_file):
-    raise NotImplementedError()
+    """
+    Converting the data from file into list of points
+    """
+    data = []
+    with open(dataset_file) as csvfile:
+        reader = csv.reader(csvfile)
+        data = list(list(point) for point in csv.reader(csvfile, delimiter=','))
+
+    #Converting to float values
+    data  = [[float(y) for y in x] for x in data]
+    return data
+        
+
 
 
 def cost_function(clustering):
-    raise NotImplementedError()
+    """
+    Calculating the total cost (sum of Euclidean distances from centroid) for each cluster
+    """
+    total_cost = 0
+    for cluster, points in clustering.items():
+        centroid = point_avg(points)
+        for point in points:
+            total_cost = total_cost + distance(centroid, point)
+    return total_cost
 
 
 def k_means(dataset_file, k):
+    """
+    Running K-means
+    """
     dataset = get_list_from_dataset_file(dataset_file)
     k_points = generate_k(dataset, k)
     assignments = assign_points(dataset, k_points)
